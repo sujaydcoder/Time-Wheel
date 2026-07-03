@@ -127,35 +127,76 @@
             el.innerHTML = '<title>' + title + '</title>';
             svg.insertBefore(el, bg.nextSibling);
 
-            // Add vowel-less label inside the sector
+            // Add vowel-less label and duration inside the sector
             let midAngle = (a1 + a2) / 2;
             let labelRadius = 180;
             let labelPos = P(midAngle, labelRadius);
-            let labelText = removeVowels(title);
             let tx = document.createElementNS(svg.namespaceURI, 'text');
             tx.setAttribute('x', labelPos[0]); tx.setAttribute('y', labelPos[1]);
-            tx.setAttribute('font-size', '14'); tx.setAttribute('font-weight', 'bold');
+            tx.setAttribute('font-size', '13'); tx.setAttribute('font-weight', 'bold');
             tx.setAttribute('text-anchor', 'middle'); tx.setAttribute('dominant-baseline', 'middle');
             tx.setAttribute('fill', 'white'); tx.setAttribute('pointer-events', 'none');
-            tx.textContent = labelText;
+
+            let hrs = Math.floor(span / 2);
+            let mins = (span % 2) * 30;
+            let dur = mins > 0 ? hrs + 'h ' + mins + 'm' : hrs + 'h';
+
+            let tspanTitle = document.createElementNS(svg.namespaceURI, 'tspan');
+            tspanTitle.setAttribute('x', labelPos[0]);
+            tspanTitle.setAttribute('dy', '-0.3em');
+            tspanTitle.textContent = removeVowels(title);
+
+            let tspanDur = document.createElementNS(svg.namespaceURI, 'tspan');
+            tspanDur.setAttribute('x', labelPos[0]);
+            tspanDur.setAttribute('dy', '1.2em');
+            tspanDur.setAttribute('font-size', '10');
+            tspanDur.setAttribute('font-weight', 'normal');
+            tspanDur.textContent = '(' + dur + ')';
+
+            tx.appendChild(tspanTitle);
+            tx.appendChild(tspanDur);
             svg.appendChild(tx);
 
             return { path: el, text: tx };
         }
+        function updateLegend() {
+            legend.innerHTML = '';
+            const activeTasks = tasks.filter(t => t !== null);
+            activeTasks.sort((a, b) => {
+                if (a.start !== b.start) {
+                    return a.start.localeCompare(b.start);
+                }
+                if (a.end !== b.end) {
+                    return a.end.localeCompare(b.end);
+                }
+                return a.title.localeCompare(b.title);
+            });
+            activeTasks.forEach(t => {
+                legend.append(t.div);
+            });
+        }
+        function createTaskDiv(index, start, end, title, color) {
+            let d = document.createElement('div');
+            d.className = 'task';
+            let st = idx(start), en = idx(end); if (en <= st) en += 48;
+            let slots = en - st;
+            let hrs = Math.floor(slots / 2);
+            let mins = (slots % 2) * 30;
+            let dur = mins > 0 ? hrs + 'h ' + mins + 'm' : hrs + 'h';
+            d.innerHTML = '<span style="cursor:pointer" onclick="editTask(' + index + ')">✎</span> <span style="display:inline-block;width:12px;height:12px;background:' + color + ';vertical-align:middle;margin-right:4px"></span> ' + title + ' <span style="color:#666;font-size:0.9em">(' + dur + ')</span> <span style="cursor:pointer;color:#999" onclick="removeTask(this,' + index + ')">✕</span>';
+            return d;
+        }
         function addTask() {
             let st = idx(s.value), en = idx(e.value); if (en <= st) en += 48;
             let sectorEls = sector(st, en, col.value, t.value);
-            let d = document.createElement('div'); d.className = 'task';
-            d.innerHTML = '<span style="cursor:pointer" onclick="editTask(' + tasks.length + ')">✎</span> <span style="display:inline-block;width:12px;height:12px;background:' + col.value + '"></span> ' + t.value + ' <span style="cursor:pointer;color:#999" onclick="removeTask(this,' + tasks.length + ')">✕</span>';
-            legend.append(d);
+            let d = createTaskDiv(tasks.length, s.value, e.value, t.value, col.value);
             tasks.push({ el: sectorEls.path, text: sectorEls.text, div: d, start: s.value, end: e.value, color: col.value, title: t.value });
+            updateLegend();
         }
         function addTaskDirect(startTime, endTime, taskTitle, taskColor) {
             let st = idx(startTime), en = idx(endTime); if (en <= st) en += 48;
             let sectorEls = sector(st, en, taskColor, taskTitle);
-            let d = document.createElement('div'); d.className = 'task';
-            d.innerHTML = '<span style="cursor:pointer" onclick="editTask(' + tasks.length + ')">✎</span> <span style="display:inline-block;width:12px;height:12px;background:' + taskColor + '"></span> ' + taskTitle + ' <span style="cursor:pointer;color:#999" onclick="removeTask(this,' + tasks.length + ')">✕</span>';
-            legend.append(d);
+            let d = createTaskDiv(tasks.length, startTime, endTime, taskTitle, taskColor);
             tasks.push({ el: sectorEls.path, text: sectorEls.text, div: d, start: startTime, end: endTime, color: taskColor, title: taskTitle });
         }
         function editTask(taskIdx) {
@@ -187,11 +228,10 @@
                 // Add new task at same position
                 let st = idx(s.value), en = idx(e.value); if (en <= st) en += 48;
                 let sectorEls = sector(st, en, col.value, t.value);
-                let d = document.createElement('div'); d.className = 'task';
-                d.innerHTML = '<span style="cursor:pointer" onclick="editTask(' + editingTaskIdx + ')">✎</span> <span style="display:inline-block;width:12px;height:12px;background:' + col.value + '"></span> ' + t.value + ' <span style="cursor:pointer;color:#999" onclick="removeTask(this,' + editingTaskIdx + ')">✕</span>';
-                legend.append(d);
+                let d = createTaskDiv(editingTaskIdx, s.value, e.value, t.value, col.value);
                 tasks[editingTaskIdx] = { el: sectorEls.path, text: sectorEls.text, div: d, start: s.value, end: e.value, color: col.value, title: t.value };
                 editingTaskIdx = -1;
+                updateLegend();
             } else {
                 originalAddTask();
             }
@@ -235,6 +275,7 @@
                     data.forEach(task => {
                         addTaskDirect(task.start, task.end, task.title, task.color);
                     });
+                    updateLegend();
                 } catch (err) {
                     alert('Error importing tasks: Invalid JSON file');
                 }
