@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <title>Time Wheel</title>
+    <style>
+        body {
+            font-family: Arial;
+            display: flex;
+            gap: 40px;
+            margin: 20px;
+            align-items: flex-start
+        }
+
+        .panel {
+            width: 260px
+        }
+
+        svg {
+            border: 1px solid #ccc
+        }
+
+        .task {
+            margin: 4px 0
+        }
+
+        @media print {
+            .panel {
+                display: none
+            }
+
+            body {
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+            }
+
+            svg {
+                width: 95vw;
+                height: 95vh;
+                border: none;
+                margin-top: 0 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class=panel>
+        <p style="text-align:center;margin:0 0 10px 0"><b style="font-size:16px">Time Wheel</b></p>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+        <div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;max-width:420px">
+
+            <button onclick="importTasks()" style="
+        cursor:pointer;
+        grid-column:1 / 3;
+        width:100%;
+        height:100%;
+        box-sizing:border-box;">
+                📥 Import
+            </button>
+
+            <button onclick="exportTasks()" style="
+        cursor:pointer;
+        grid-column:3 / 5;
+        width:100%;
+        height:100%;
+        box-sizing:border-box;">
+                📤 Export
+            </button>
+            <label for="s">Start</label>
+            <input id="s" type="time" step="1800" value="20:00">
+            <label for="e">End</label>
+            <input id="e" type="time" step="1800" value="05:00">
+
+            <label for="t">Task</label>
+            <input id="t" placeholder="Ex: Sleep" style="grid-column:2 / 5">
+            <label for="col">Color</label>
+            <input id="col" type="color" value="lightgray"
+                style="padding:0;width:88px;height:100%;box-sizing:border-box">
+
+            <button onclick='addTask()'>Add</button>
+            <button onclick='print()'>Print</button>
+
+        </div>
+        <div id=legend></div>
+    </div>
+    <svg id=svg viewBox='-310 -340 620 650' width=600 height=630 style="margin-top:20px"></svg>
+    <script>
+        const svg = document.getElementById('svg'), R = 300;
+        function P(a, r) { let x = Math.cos((a - 90) * Math.PI / 180) * r, y = Math.sin((a - 90) * Math.PI / 180) * r; return [x, y] }
+        let bg = document.createElementNS(svg.namespaceURI, 'circle'); bg.setAttribute('r', 260); bg.setAttribute('fill', 'white'); bg.setAttribute('stroke', '#444'); bg.setAttribute('stroke-width', 2); svg.append(bg);
+        for (let i = 0; i < 48; i++) {
+            let ang = i * 7.5;
+            let len = i % 2 == 0 ? 22 : 11;
+            // Tick marks start at circle edge (260) and go inward (away from outer edge)
+            let a = P(ang, 260), b = P(ang, 260 - len);
+            let l = document.createElementNS(svg.namespaceURI, 'line');
+            l.setAttribute('x1', a[0]); l.setAttribute('y1', a[1]); l.setAttribute('x2', b[0]); l.setAttribute('y2', b[1]); l.setAttribute('stroke', '#333'); l.setAttribute('stroke-width', i % 2 == 0 ? 3 : 1.5); svg.append(l);
+            // Labels placed at the outer edge aligned WITH major ticks for precise reading
+            if (i % 2 == 0) {
+                let p = P(ang, 260 + 30);
+                let tx = document.createElementNS(svg.namespaceURI, 'text');
+                tx.setAttribute('x', p[0]); tx.setAttribute('y', p[1]); tx.setAttribute('font-size', '11'); tx.setAttribute('text-anchor', 'middle'); tx.setAttribute('dominant-baseline', 'middle');
+                let h = Math.floor(i / 2), m = i % 2 ? 30 : 0;
+                tx.textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                svg.append(tx);
+            }
+        }
+        const tasks = [];
+        let editingTaskIdx = -1;
+        function idx(v) { let [a, b] = v.split(':').map(Number); return a * 2 + (b >= 30) }
+        function timeFromIdx(i) { let h = Math.floor(i / 2), m = i % 2 ? 30 : 0; return String(h % 24).padStart(2, '0') + ':' + String(m).padStart(2, '0'); }
+        function removeVowels(str) { return str.replace(/[aeiouAEIOU]/g, ''); }
+        function sector(s, e, c, title) {
+            let a1 = s * 7.5, a2 = e * 7.5;
+            let p1 = P(a1, 260), p2 = P(a2, 260), c0 = P(a2, 0);
+            let span = e - s;
+            if (span < 0) span += 48;
+            let large = span > 24 ? 1 : 0;
+            let path = `M0 0 L${p1} A260 260 0 ${large} 1 ${p2} Z`;
+            let el = document.createElementNS(svg.namespaceURI, 'path');
+            el.setAttribute('d', path); el.setAttribute('fill', c); el.setAttribute('fill-opacity', '.75');
+            el.innerHTML = '<title>' + title + '</title>';
+            svg.insertBefore(el, bg.nextSibling);
+
+            // Add vowel-less label inside the sector
+            let midAngle = (a1 + a2) / 2;
+            let labelRadius = 180;
+            let labelPos = P(midAngle, labelRadius);
+            let labelText = removeVowels(title);
+            let tx = document.createElementNS(svg.namespaceURI, 'text');
+            tx.setAttribute('x', labelPos[0]); tx.setAttribute('y', labelPos[1]);
+            tx.setAttribute('font-size', '14'); tx.setAttribute('font-weight', 'bold');
+            tx.setAttribute('text-anchor', 'middle'); tx.setAttribute('dominant-baseline', 'middle');
+            tx.setAttribute('fill', 'white'); tx.setAttribute('pointer-events', 'none');
+            tx.textContent = labelText;
+            svg.appendChild(tx);
+
+            return { path: el, text: tx };
+        }
+        function addTask() {
+            let st = idx(s.value), en = idx(e.value); if (en <= st) en += 48;
+            let sectorEls = sector(st, en, col.value, t.value);
+            let d = document.createElement('div'); d.className = 'task';
+            d.innerHTML = '<span style="cursor:pointer" onclick="editTask(' + tasks.length + ')">✎</span> <span style="display:inline-block;width:12px;height:12px;background:' + col.value + '"></span> ' + t.value + ' <span style="cursor:pointer;color:#999" onclick="removeTask(this,' + tasks.length + ')">✕</span>';
+            legend.append(d);
+            tasks.push({ el: sectorEls.path, text: sectorEls.text, div: d, start: s.value, end: e.value, color: col.value, title: t.value });
+        }
+        function addTaskDirect(startTime, endTime, taskTitle, taskColor) {
+            let st = idx(startTime), en = idx(endTime); if (en <= st) en += 48;
+            let sectorEls = sector(st, en, taskColor, taskTitle);
+            let d = document.createElement('div'); d.className = 'task';
+            d.innerHTML = '<span style="cursor:pointer" onclick="editTask(' + tasks.length + ')">✎</span> <span style="display:inline-block;width:12px;height:12px;background:' + taskColor + '"></span> ' + taskTitle + ' <span style="cursor:pointer;color:#999" onclick="removeTask(this,' + tasks.length + ')">✕</span>';
+            legend.append(d);
+            tasks.push({ el: sectorEls.path, text: sectorEls.text, div: d, start: startTime, end: endTime, color: taskColor, title: taskTitle });
+        }
+        function editTask(taskIdx) {
+            if (tasks[taskIdx]) {
+                s.value = tasks[taskIdx].start;
+                e.value = tasks[taskIdx].end;
+                t.value = tasks[taskIdx].title;
+                col.value = tasks[taskIdx].color;
+                editingTaskIdx = taskIdx;
+            }
+        }
+        function removeTask(btn, taskIdx) {
+            if (tasks[taskIdx]) {
+                tasks[taskIdx].el.remove();
+                if (tasks[taskIdx].text) tasks[taskIdx].text.remove();
+                tasks[taskIdx].div.remove();
+                tasks[taskIdx] = null;
+                if (editingTaskIdx === taskIdx) editingTaskIdx = -1;
+            }
+        }
+        // Override addTask to handle editing
+        const originalAddTask = addTask;
+        addTask = function () {
+            if (editingTaskIdx >= 0 && tasks[editingTaskIdx]) {
+                // Remove old task
+                tasks[editingTaskIdx].el.remove();
+                if (tasks[editingTaskIdx].text) tasks[editingTaskIdx].text.remove();
+                tasks[editingTaskIdx].div.remove();
+                // Add new task at same position
+                let st = idx(s.value), en = idx(e.value); if (en <= st) en += 48;
+                let sectorEls = sector(st, en, col.value, t.value);
+                let d = document.createElement('div'); d.className = 'task';
+                d.innerHTML = '<span style="cursor:pointer" onclick="editTask(' + editingTaskIdx + ')">✎</span> <span style="display:inline-block;width:12px;height:12px;background:' + col.value + '"></span> ' + t.value + ' <span style="cursor:pointer;color:#999" onclick="removeTask(this,' + editingTaskIdx + ')">✕</span>';
+                legend.append(d);
+                tasks[editingTaskIdx] = { el: sectorEls.path, text: sectorEls.text, div: d, start: s.value, end: e.value, color: col.value, title: t.value };
+                editingTaskIdx = -1;
+            } else {
+                originalAddTask();
+            }
+        };
+        function exportTasks() {
+            const data = tasks.filter(t => t !== null).map(t => ({
+                start: t.start,
+                end: t.end,
+                title: t.title,
+                color: t.color
+            }));
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'time-wheel-tasks.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        function importTasks() {
+            document.getElementById('importFile').click();
+        }
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    // Clear existing tasks
+                    tasks.forEach(t => {
+                        if (t) {
+                            t.el.remove();
+                            if (t.text) t.text.remove();
+                            t.div.remove();
+                        }
+                    });
+                    tasks.length = 0;
+                    editingTaskIdx = -1;
+                    // Import new tasks directly without using input fields
+                    data.forEach(task => {
+                        addTaskDirect(task.start, task.end, task.title, task.color);
+                    });
+                } catch (err) {
+                    alert('Error importing tasks: Invalid JSON file');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+    </script>
+</body>
+
+</html>
