@@ -74,8 +74,8 @@
             </div>
             <div style="display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center">
                 <label for="t">Task</label>
-                <input id="t" placeholder="Ex: Sleep" style="width:100%; box-sizing:border-box; height:30px">
-                <input id="col" type="color" value="lightgray" style="padding:0; width:50px; height:30px; box-sizing:border-box; cursor:pointer; border:1px solid #ccc; border-radius:3px">
+                <input id="t" placeholder="Ex: Sleep, Work, Gym etc" style="width:100%; box-sizing:border-box; height:30px">
+                <input id="col" type="color" value="lightpink" style="padding:0; width:50px; height:30px; box-sizing:border-box; cursor:pointer; border:1px solid #ccc; border-radius:3px">
             </div>
             <div style="display:flex; gap:10px">
                 <button onclick="addTask()" style="flex:1; height:36px; cursor:pointer">Add</button>
@@ -133,7 +133,7 @@
             let large = span > 24 ? 1 : 0;
             let path = `M0 0 L${p1} A260 260 0 ${large} 1 ${p2} Z`;
             let el = document.createElementNS(svg.namespaceURI, 'path');
-            el.setAttribute('d', path); el.setAttribute('fill', c); el.setAttribute('fill-opacity', '.75');
+            el.setAttribute('d', path); el.setAttribute('fill', c); el.setAttribute('fill-opacity', '.75'); el.setAttribute('stroke', 'black'); el.setAttribute('stroke-width', '1.5');
             el.innerHTML = '<title>' + title + '</title>';
             svg.insertBefore(el, bg.nextSibling);
 
