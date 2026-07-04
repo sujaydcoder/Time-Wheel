@@ -35,7 +35,9 @@
         }
 
         @media print {
-            .panel, .instructions {
+
+            .panel,
+            .instructions {
                 display: none
             }
 
@@ -68,35 +70,50 @@
             </div>
             <div style="display:grid; grid-template-columns:auto 1fr auto 1fr; gap:10px; align-items:center">
                 <label for="s">Start</label>
-                <input id="s" type="time" step="1800" value="20:00" style="width:100%; box-sizing:border-box; height:30px">
+                <input id="s" type="time" step="1800" value="20:00"
+                    style="width:100%; box-sizing:border-box; height:30px">
                 <label for="e" style="margin-left:10px">End</label>
-                <input id="e" type="time" step="1800" value="05:00" style="width:100%; box-sizing:border-box; height:30px">
+                <input id="e" type="time" step="1800" value="05:00"
+                    style="width:100%; box-sizing:border-box; height:30px">
             </div>
             <div style="display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center">
                 <label for="t">Task</label>
-                <input id="t" placeholder="Ex: Sleep, Work, Gym etc" style="width:100%; box-sizing:border-box; height:30px">
-                <input id="col" type="color" value="lightpink" style="padding:0; width:50px; height:30px; box-sizing:border-box; cursor:pointer; border:1px solid #ccc; border-radius:3px">
+                <input id="t" placeholder="Ex: Sleep, Work, Gym etc"
+                    style="width:100%; box-sizing:border-box; height:30px" required>
+                <input id="col" type="color" value="lightpink"
+                    style="padding:0; width:50px; height:30px; box-sizing:border-box; cursor:pointer; border:1px solid #ccc; border-radius:3px">
             </div>
             <div style="display:flex; gap:10px">
                 <button onclick="addTask()" style="flex:1; height:36px; cursor:pointer">Add</button>
                 <button onclick="print()" style="flex:1; height:36px; cursor:pointer">Print</button>
             </div>
         </div>
-        <p style="margin:20px 0 10px 0; font-size:14px; font-weight:bold; border-bottom:1px solid #ddd; padding-bottom:5px">Tasks in Chronological Order</p>
+        <p
+            style="margin:20px 0 10px 0; font-size:14px; font-weight:bold; border-bottom:1px solid #ddd; padding-bottom:5px">
+            Tasks in Chronological Order</p>
         <div id="legend"></div>
     </div>
     <svg id="svg" viewBox="-310 -340 620 650" width="600" height="630" style="margin-top:20px"></svg>
     <div class="instructions">
         <p style="margin:0 0 12px 0"><b style="font-size:16px">Instructions</b></p>
         <ol style="padding-left:18px;line-height:1.6;font-size:14px">
-            <li style="margin-bottom:8px"><b>Set Times:</b> Input the start and end times for your task. <i>Tip: Slices can cross midnight (e.g., 22:00 to 05:00)!</i></li>
-            <li style="margin-bottom:8px"><b>Task Details:</b> Enter the task name. Click the color box directly next to the input to open the browser color picker and select a custom color.</li>
-            <li style="margin-bottom:8px"><b>Place on Wheel:</b> Click the <b>Add</b> button to draw the task sector on the Time Wheel.</li>
-            <li style="margin-bottom:8px"><b>Auto-Sorting:</b> Slices are automatically sorted in chronological order under the task list.</li>
-            <li style="margin-bottom:8px"><b>Edit Tasks:</b> Click the pencil icon (<b>✎</b>) in the list to load a task back into the form. Modify details and click <b>Add</b> to save changes.</li>
-            <li style="margin-bottom:8px"><b>Delete Tasks:</b> Click the cross icon (<b>✕</b>) to remove a task from the list and wheel.</li>
-            <li style="margin-bottom:8px"><b>Save/Load:</b> Use <b>📤 Export</b> to download your schedule as a JSON file, or <b>📥 Import</b> to restore a saved schedule.</li>
-            <li style="margin-bottom:8px"><b>Print Layout:</b> Click <b>Print</b> to save the Time Wheel visually (hides controls and instructions).</li>
+            <li style="margin-bottom:8px"><b>Set Times:</b> Input the start and end times for your task. <i>Tip: Slices
+                    can cross midnight (e.g., 22:00 to 05:00)!</i></li>
+            <li style="margin-bottom:8px"><b>Task Details:</b> Enter the task name (compulsory to add or save). Click
+                the color box directly next to the input to open the browser color picker and select a custom color.
+            </li>
+            <li style="margin-bottom:8px"><b>Place on Wheel:</b> Click the <b>Add</b> button to draw the task sector on
+                the Time Wheel.</li>
+            <li style="margin-bottom:8px"><b>Auto-Sorting:</b> Slices are automatically sorted in chronological order
+                under the task list.</li>
+            <li style="margin-bottom:8px"><b>Edit Tasks:</b> Click the pencil icon (<b>✎</b>) in the list to load a task
+                back into the form. Modify details and click <b>Add</b> to save changes.</li>
+            <li style="margin-bottom:8px"><b>Delete Tasks:</b> Click the cross icon (<b>✕</b>) to remove a task from the
+                list and wheel.</li>
+            <li style="margin-bottom:8px"><b>Save/Load:</b> Use <b>📤 Export</b> to download your schedule as a JSON
+                file, or <b>📥 Import</b> to restore a saved schedule.</li>
+            <li style="margin-bottom:8px"><b>Print Layout:</b> Click <b>Print</b> to save the Time Wheel visually (hides
+                controls and instructions).</li>
         </ol>
     </div>
     <script>
@@ -137,7 +154,7 @@
             el.innerHTML = '<title>' + title + '</title>';
             svg.insertBefore(el, bg.nextSibling);
 
-            // Add vowel-less label and duration inside the sector
+            // Add title label and duration inside the sector
             let midAngle = (a1 + a2) / 2;
             let labelRadius = 180;
             let labelPos = P(midAngle, labelRadius);
@@ -154,7 +171,7 @@
             let tspanTitle = document.createElementNS(svg.namespaceURI, 'tspan');
             tspanTitle.setAttribute('x', labelPos[0]);
             tspanTitle.setAttribute('dy', '-0.3em');
-            tspanTitle.textContent = removeVowels(title);
+            tspanTitle.textContent = title;
 
             let tspanDur = document.createElementNS(svg.namespaceURI, 'tspan');
             tspanDur.setAttribute('x', labelPos[0]);
@@ -230,6 +247,10 @@
         // Override addTask to handle editing
         const originalAddTask = addTask;
         addTask = function () {
+            if (!t.value.trim()) {
+                alert('Please enter a task name.');
+                return;
+            }
             if (editingTaskIdx >= 0 && tasks[editingTaskIdx]) {
                 // Remove old task
                 tasks[editingTaskIdx].el.remove();
@@ -246,20 +267,39 @@
                 originalAddTask();
             }
         };
-        function exportTasks() {
+        async function exportTasks() {
             const data = tasks.filter(t => t !== null).map(t => ({
                 start: t.start,
                 end: t.end,
                 title: t.title,
                 color: t.color
             }));
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'time-wheel-tasks.json';
-            a.click();
-            URL.revokeObjectURL(url);
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: 'time-wheel-tasks.json',
+                        types: [{
+                            description: 'JSON Files',
+                            accept: {
+                                'application/json': ['.json']
+                            }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(JSON.stringify(data, null, 2));
+                    await writable.close();
+                } catch (err) {
+                    console.log('Export cancelled or failed:', err);
+                }
+            } else {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'time-wheel-tasks.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
         }
         function importTasks() {
             document.getElementById('importFile').click();
